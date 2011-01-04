@@ -1,17 +1,13 @@
 = katamari
 
-Description goes here.
+katamari ("clod") is a mass spectrometry shotgun proteomics analysis pipeline.
+It runs and compiles results from various search engines to identify and
+quantitate peptides and proteins.
 
-== Note on Patches/Pull Requests
- 
-* Fork the project.
-* Make your feature addition or bug fix.
-* Add tests for it. This is important so I don't break it in a
-  future version unintentionally.
-* Commit, do not mess with rakefile, version, or history.
-  (if you want to have your own version, that is fine but bump version in a commit by itself I can ignore when I pull)
-* Send me a pull request. Bonus points for topic branches.
+== Examples
+
+    Katamari.run input.yaml 
 
 == Copyright
 
-Copyright (c) 2011 John Prince. See LICENSE for details.
+see LICENSE

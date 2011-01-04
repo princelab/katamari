@@ -1,24 +1,20 @@
 require 'rubygems'
 require 'rake'
-
-begin
-  require 'jeweler'
-  Jeweler::Tasks.new do |gem|
-    gem.name = "katamari"
-    gem.summary = %Q{TODO: one-line summary of your gem}
-    gem.description = %Q{TODO: longer description of your gem}
-    gem.email = "jtprince@gmail.com"
-    gem.homepage = "http://github.com/jtprince/katamari"
-    gem.authors = ["John Prince"]
-    gem.add_development_dependency "bacon", ">= 0"
-    # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
-  end
-  Jeweler::GemcutterTasks.new
-rescue LoadError
-  puts "Jeweler (or a dependency) not available. Install it with: gem install jeweler"
-end
-
 require 'rake/testtask'
+require 'rake/rdoctask'
+
+require 'jeweler'
+Jeweler::Tasks.new do |gem|
+  gem.name = "katamari"
+  gem.summary = %Q{mass spectrometry shotgun proteomics analysis pipeline ("clod")}
+  gem.description = %Q{katamari ("clod") is a mass spectrometry shotgun proteomics analysis pipeline.  It runs and compiles results from various search engines to identify and quantitate peptides and proteins.}
+  gem.email = "jtprince@gmail.com"
+  gem.homepage = "http://github.com/jtprince/katamari"
+  gem.authors = ["John Prince", "Jesse Jashinsky"]
+  gem.add_development_dependency "spec-more", ">= 0"
+end
+Jeweler::GemcutterTasks.new
+
 Rake::TestTask.new(:spec) do |spec|
   spec.libs << 'lib' << 'spec'
   spec.pattern = 'spec/**/*_spec.rb'
@@ -38,11 +34,10 @@ rescue LoadError
   end
 end
 
-task :spec => :check_dependencies
+#task :spec => :check_dependencies
 
 task :default => :spec
 
-require 'rake/rdoctask'
 Rake::RDocTask.new do |rdoc|
   version = File.exist?('VERSION') ? File.read('VERSION') : ""
 

@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 describe "Katamari" do
-  it "fails" do
-    should.flunk "hey buddy, you should probably rename this file and start specing for real"
+  it "runs some searches" do
+    should.flunk "nothing here yet"
   end
 end
