@@ -1,9 +1,10 @@
+require 'nokogiri'
 require 'builder'
 
 class Katamari
   module SearchEngine
     class Xtandem
-      DIR = 'xtandem'
+
       include SearchEngine
 
       def run(file, opts={})
@@ -11,15 +12,9 @@ class Katamari
 
       end
 
-      def create_tandem_input
-        filename,'w') {|out| out.print xml.target! }
+      def create_tandem_input_xml
+        #filename,'w') {|out| out.print xml.target! }
       end
-
-      DEFAULT_PARAMS = {
-        'list path' => 
-
-      }
-
     end
   end
 end
