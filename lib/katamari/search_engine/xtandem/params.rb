@@ -32,16 +32,10 @@ class Katamari
         def initialize(xml_file=nil)
           @config = 
             if xml_file ; read_xml(xml_file) 
-            else ; create_dynamic_config_hash
+            else ; Hash.new {|h,k| h[k] = {} }
             end
         end
 
-        # returns a dynamic config hash where setting an unknown key at the
-        # top level will generate a hash
-        #
-        #     hsh = dynamic_config_hash
-        #     hsh['spectrum']['total peaks'] = 75
-        def create_dynamic_config_hash ; Hash.new {|h,k| h[k] = {} } end
 
         # sets all params back to default (clearing every other key/val pair)
         # returns self for chaining
@@ -69,9 +63,9 @@ class Katamari
           string
         end
 
-        # returns a hash of the xml configuration
+        # sets and returns config hash of the xml configuration
         def read_xml(xml_file)
-          hash = create_dynamic_config_hash
+          hash = Hash.new {|h,k| h[k] = {} }
           doc = Nokogiri::XML.parse(IO.read(xml_file), *NOKOGIRI_PARSE_OPTS)
           bioml_node = doc.root
           bioml_node.xpath(".//note[@type='input']").each do |node|

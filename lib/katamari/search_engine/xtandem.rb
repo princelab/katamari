@@ -9,7 +9,6 @@ class Katamari
 
       def run(file, opts={})
         super(file, opts)
-
       end
 
       def create_tandem_input_xml
