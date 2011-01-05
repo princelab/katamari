@@ -1,7 +1,8 @@
 
+
 class Katamari
-  class SearchEngine
-    def initialize(mgfs, config)
-    end
+  module SearchEngine
   end
 end
+
+%w(xtandem).each {|engine| require "katamari/search_engine/#{engine}" }

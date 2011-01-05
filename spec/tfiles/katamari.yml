@@ -1,0 +1,23 @@
+---
+search:
+  # username: jtprince
+  # useremail: jtprince@chem.byu.edu
+  # comment: run comment
+  mascot:
+    run: false
+  omssa:
+    run: false
+  xtandem:
+    run: true
+  tide:
+    run: false
+  # use mascot specification
+  modifications:
+    static: 
+    - Carbamidomethyl (C)
+    variable:
+    - Oxidation (M)
+organism: human
+enzyme: trypsin
+quantitation:
+  spectral_counts: true

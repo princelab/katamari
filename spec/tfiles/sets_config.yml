@@ -1,0 +1,8 @@
+# takes a basename (e.g., your_file) and searches for the latest applicable
+# file or takes a specific filename (such as your_file.raw or your_file.mzML),
+some_named_group:
+- file1.mzML
+- file2.mzML
+another_named_group:
+- file3.mzML
+- file4.mzML

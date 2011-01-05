@@ -1,0 +1,60 @@
+<!-- The pipeline automates many things, such as input files. You can set the command lines for different programs in this config file. -->
+<!-- In command lines, essential parts are automated, which are mentioned in the comments. Altering those parts of the command lines could break the program. -->
+<!-- For programs that are optional to run, you can specify to run them by stating either run="true" or run="false" -->
+
+<KatamariDotei>
+
+	<RawToMzml>
+		<!-- The format element specifies which format you want the raw file turned into: mzXML or mzML -->
+		<Format type="mzML"/>
+		<!-- If you choose mzXML, you can specify how it run here -->
+		<mzXML>
+			<!-- ReAdW is used to transform a raw file into mzXML -->
+			<!-- Automated: -mzXML <raw file path> [<output file>] -->
+			<ReAdW commandLine=""/>
+		</mzXML>
+		<mzML>
+			<!-- See msconvert_server.rb on the Windows machine to alter -->
+			<!-- The IP address of the Windows machine with msconvert_server.rb -->
+			<Host ip="192.168.101.180"/>
+		</mzML>
+	</RawToMzml>
+
+	<MzmlToOther>
+		<!-- Maybe some sort of setting here for ms-msrun -->
+		<!-- Automated: <MS1 file> <output file> -->
+		<Hardklor run="false" commandLine=""/>
+	</MzmlToOther>
+
+	<Search>
+		<!-- For Mascot, see mascot.yaml -->
+		<Mascot run="t"/>
+		<!-- For X! Tandem...um.... -->
+		<XTandem run="t"/>
+		<!-- Automated: -fm -op -e -d -->
+		<OMSSA run="t" commandLine=""/>
+		<Tide run="t">
+			<!-- Automated: -fasta -enzyme -->
+			<TideIndex commandLine=""/>
+			<!-- Automated: -proteins -peptides -spectra -->
+			<TideSearch commandLine=""/>
+		</Tide>
+	</Search>
+
+	<!-- Automated: -j -->
+	<Percolator commandLine=""/>
+
+	<!-- Any scan with qvalues lower than the cutoff are dropped in the new file -->
+	<Refiner cutoff="0.8"/>
+
+	<Iterations>
+		<Iteration run="1" enzyme="trypsin"/>
+	</Iterations>
+
+</KatamariDotei>
+
+
+
+
+
+
