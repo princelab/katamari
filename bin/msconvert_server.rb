@@ -4,42 +4,51 @@ require 'shellwords'
 
 ################################################################################
 # SETTINGS:
-#
+MSCONVERT_CMD = "msconvert.exe"
 PORT = 22007
+BASE_DIR = 'S:'
 ################################################################################
 
 ## by default, will specify the output directory to be the path of the input
 ## directory
 
-puts "starting #{File.basename(__FILE__)}"
-
+puts "starting up #{File.basename(__FILE__)} and listening..."
 
 # this is the root where you want all conversion to take place
-BASE_DIR = 'S:'
-MSCONVERT_CMD = "msconvert.exe"
 
 server = TCPServer.open(PORT) # Socket to listen on port 2200
 loop do
   client = server.accept
+  rawfilename_with_input_path_from_basedir = client.gets.chomp
+  if rawfilename_with_input_path_from_basedir == "--help"
+    client.puts `#{MSCONVERT_CMD}`
+  else
+    (output_path_from_basedir, other_args) = 2.times.map { client.gets.chomp }
 
-  (rawfilename_with_input_path_from_basedir, output_path_from_basedir, other_args) = 3.times.map { client.gets.chomp }
+    new_ext = other_args["--mzXML"] ? ".mzXML" : ".mzML"
 
-  full_path_to_rawfile = File.join(BASE_DIR, rawfilename_with_input_path_from_basedir)
-  full_output_dir_path = File.join(BASE_DIR, output_path_from_basedir)
+    basename = rawfilename_with_input_path_from_basedir.split(/[\/\\]/).last
+    base_noext = basename.chomp(File.extname(basename))
 
-  FileUtils.mkpath(full_output_dir_path)
-  
-  #puts "Received and processed data:"
-  #puts "  Full path to rawfile : #{full_path_to_rawfile}"
-  #puts "  Full path to outdir  : #{full_output_dir_path}"
-  #puts "  Other arguments: #{other_args}"
+    full_path_to_rawfile = File.join(BASE_DIR, rawfilename_with_input_path_from_basedir)
+    full_output_dir_path = File.join(BASE_DIR, output_path_from_basedir)
+    full_outputfile_path = File.join(full_output_dir_path, base_noext + new_ext)
 
-  cmd = [MSCONVERT_CMD, full_path_to_rawfile.gsub("/","\\"), "-o " + full_output_dir_path.gsub("/","\\"), other_args].join(" ")
-  # should sanitize the input since we're running it all in one command
+    FileUtils.mkpath(full_output_dir_path)
 
-  Shellwords.shellescape(cmd)
-  system cmd
-  
-  client.puts "done"
+    cmd = [MSCONVERT_CMD, full_path_to_rawfile.gsub("/","\\"), "-o " + full_output_dir_path.gsub("/","\\"), other_args].join(" ")
+    # should sanitize the input since we're running it all in one command
+
+    system cmd
+
+    if File.exist?(full_outputfile_path)
+      client.puts "done"
+      puts "success"
+    else
+      client.puts "fail"
+      puts "fail"
+    end
+    puts "executed: #{cmd}"
+  end
   client.close # Disconnect from the client
 end

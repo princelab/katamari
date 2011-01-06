@@ -1,6 +1,7 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 
 require 'optparse'
+require 'fileutils'
 require 'katamari/msconvert'
 
 ###############################################################################
@@ -26,37 +27,59 @@ def putsv(*args)
  puts *args if $VERBOSE
 end
 
+opts = OptionParser.new do |op|
+  op.banner = "usage: #{File.basename(__FILE__)} file.RAW <msconvert_options>"
+  op.separator "outputs: file.mz[X]ML"
+  op.on("-h", "--help") do
+    puts Katamari::Msconvert.new(SERVER_IP, PORT).usage
+  end
+end
+opts.parse!
+
 if ARGV.size == 0
-  puts "usage: #{File.basename(__FILE__)} file.RAW <msconvert_options>"
-  puts "outputs: file.mz[X]ML"
+  puts 
   exit
 end
 
 (filename, *options) = ARGV
 options_st = options.join(" ")
 
-full_path = File.expand_path(filename)
+input_full_path = File.expand_path(filename)
+input_file_basename = File.basename(filename)
 
-(full_path_parts, base_dir_parts) = [full_path,BASE_DIR].map {|fn| fn.split(/[\/\\]/) }
+output_dir = File.dirname(input_full_path) # only need for files not under the base
 
-under_mount = (full_path_parts[0,base_dir_parts.size] == base_dir_parts)
+(input_full_path_parts, base_dir_parts) = [input_full_path,BASE_DIR].map {|fn| fn.split(/[\/\\]/) }
+
+under_mount = (input_full_path_parts[0,base_dir_parts.size] == base_dir_parts)
+
+tmp_dir = File.join(BASE_DIR, MOUNT_TMP_DIR)
 
 # the file is already located under the mount
 rel_path = 
   if under_mount
-    putsv "file is already under the mount point (this is good)"
-    File.join(full_path_parts[base_dir_parts.size..-1])
+    putsv "file is under the mount point: #{BASE_DIR}"
+    File.join(input_full_path_parts[base_dir_parts.size..-1])
   else # the file must be moved under the mount
-    raise NotImplementedError, "haven't got this working yet"
+    FileUtils.cp(filename, tmp_dir)
+    putsv "copying under mount: #{File.join(tmp_dir, input_file_basename)}"
+    File.join(MOUNT_TMP_DIR, input_file_basename)
   end
 
 converter = Katamari::Msconvert.new(SERVER_IP, PORT)
 
 output_rel_path = converter.convert(rel_path, options_st)
 output_full_path = File.join(BASE_DIR, output_rel_path)
+basename = output_full_path.split(/[\/\\]/).last
+
 
 if under_mount
-  putsv "created: #{output_full_path}"
+  putsv "            created: #{output_full_path}"
 else
+  putsv "   msconvert output: #{output_full_path}"
+  putsv "          moving to: #{output_dir}"
+  FileUtils.mv(output_full_path, output_dir)
+  outputfile = File.join(output_dir, basename)
+  putsv "            created: #{outputfile}"
 end
 
