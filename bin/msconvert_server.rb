@@ -1,12 +1,18 @@
 require 'socket'
 require 'fileutils'
+require 'shellwords'
+
+################################################################################
+# SETTINGS:
+#
+PORT = 22007
+################################################################################
 
 ## by default, will specify the output directory to be the path of the input
 ## directory
 
 puts "starting #{File.basename(__FILE__)}"
 
-PORT = 22007
 
 # this is the root where you want all conversion to take place
 BASE_DIR = 'S:'
@@ -28,19 +34,12 @@ loop do
   #puts "  Full path to outdir  : #{full_output_dir_path}"
   #puts "  Other arguments: #{other_args}"
 
-  cmd = [MSCONVERT_CMD, full_path_to_rawfile.gsub("/","\\"), "-o " + full_output_dir_path.gsub("/","\\"), other_args]
-  #puts "running (safe mode): #{cmd.join(" ")}"
-  # important to run this as a series of arguments because
-  # the arguments are then shell escaped!
-  system cmd.join(" ")
-  #`#{cmd.join(" ")}`
-  
-  # It's lame to have a script run a script, but it's the only way to get this to work.
-  #system "scriptit.bat " + filename + ".raw"
+  cmd = [MSCONVERT_CMD, full_path_to_rawfile.gsub("/","\\"), "-o " + full_output_dir_path.gsub("/","\\"), other_args].join(" ")
+  # should sanitize the input since we're running it all in one command
 
-  client.puts "done"
+  Shellwords.shellescape(cmd)
+  system cmd
   
-  #puts "Done!"
-  #puts "Output file is in: #{full_output_dir_path}"
+  client.puts "done"
   client.close # Disconnect from the client
 end
