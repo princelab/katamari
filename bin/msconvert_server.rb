@@ -1,39 +1,38 @@
 require 'socket'
+require 'fileutils'
+
+## by default, will specify the output directory to be the path of the input
+## directory
+
 
 PORT = 22007
-BASE_DIR = 'C:/<smething'
+
+# this is the root where you want all conversion to take place
+BASE_DIR = 'S:'
+MSCONVERT_CMD = "msconvert.exe"
 
 server = TCPServer.open(port) # Socket to listen on port 2200
-loop do # Servers run forever
+loop do
   client = server.accept
 
-  relative_path_from_base_dir = client.gets.chomp
-  conversion_args = client.gets.chomp
+  (rawfilename_with_input_path_from_basedir, output_path_from_basedir, other_args) = 3.times.map { client.gets.chomp }
 
-  full_path = File.join(BASE_DIR, relative_path_from_base_dir)
+  full_path_to_rawfile = File.join(BASE_DIR, rawfilename_with_input_path_from_basedir)
+  full_output_dir_path = File.join(BASE_DIR, output_path_from_basedir)
+
+  FileUtils.mkpath(full_output_dir_path)
   
-  ## A small attempt at preventing shell injection. Do we even need security on this?
-  #if filename.include?("|") || filename.include?("&") || filename.include?("/") || filename.include?(".exe")
-  #  client.puts "Get lost, hacker!"
-  #  client.close
-  #  next
-  #end
+  puts "Received and processed data:"
+  puts "  Full path to rawfile : #{full_path_to_rawfile}"
+  puts "  Full path to outdir  : #{full_output_dir_path}"
+  puts "  Other arguments: #{other_args}"
+
+  cmd = [MSCONVERT_CMD, full_path_to_rawfile, "-o #{output_path_from_basedir}", other_args]
+  puts "running (safe mode): #{cmd.join(" ")}"
   
-  puts "Reading contents of #{filename}.raw"
-  raw_data = client.gets("\r\r\n\n").chomp("\r\r\n\n")  # "\r\r\n\n" is the delimiter of the data stream.
-  file = File.open(filename + ".raw", 'wb')
-  file.print raw_data
-  file.close
-  
-  puts "Converting #{filename}"
   # It's lame to have a script run a script, but it's the only way to get this to work.
-  system "scriptit.bat " + filename + ".raw"
+  #system "scriptit.bat " + filename + ".raw"
   
-  puts "Sending contents of #{filename}.mzML"
-  data = IO.read(filename + ".mzML")
-  client.print data
-  client.print "\r\r\n\n"
-  
-  puts "Done"
+  puts "Output file in: #{full_output_dir_path}"
   client.close # Disconnect from the client
 end
