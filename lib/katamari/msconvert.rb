@@ -1,4 +1,5 @@
 require 'pathname'
+require 'socket'
 
 class Katamari
   # provides a simple TCP server/client architecture for converting files
@@ -12,7 +13,7 @@ class Katamari
     #     Katamari::Msconvert.convert("RAW/tmp/test.raw")
     #
     # returns the relative path (from BASE_DIR) to the output file
-    def self.convert(relative_path_on_server, server_ip, other_args="")
+    def self.convert(relative_path_on_server, server_ip, other_args="-z")
       new_ext = 
         if other_args["--mzXML"]
           ".mzXML"
@@ -26,11 +27,16 @@ class Katamari
       rel_outfile = File.join(outputdir, fn.sub_ext(new_ext))
 
       port = 22007  # must match that of msconvert_server.rb (in bin dir)
-      client = TCPSocket.open(server_ip, port)
-      client.puts relative_path_on_server
-      client.puts outputdir
-      client.puts other_args
-      client.close
+      server = TCPSocket.open(server_ip, port)
+      server.puts relative_path_on_server
+      server.puts outputdir
+      server.puts other_args
+      reply = server.read
+      if reply.chomp == "done"
+        server.close
+      else
+        raise "something bad happened with the conversion! (didn't get confirmation of success...)"
+      end
       rel_outfile
     end
   end
