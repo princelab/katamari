@@ -36,6 +36,44 @@ class Katamari
             end
         end
 
+        def convert_mass_error_units(cfg_unit)
+          if cfg_unit == 'daltons'
+            cfg_unit.capitalize
+          else  # ppm is the same
+            cfg_unit 
+          end
+        end
+
+        # returns an array, [cuts, nocut, c-term?], eg:  ['KR','P',true]
+        def enzyme_specificity_to_cleavage_site
+        end
+
+        # updates the xtandem params from the katamari config file
+        def update_from_katamari_config!(cfg)
+          
+         ################################################################################ 
+
+         working here!!!!!
+
+          # can be either a string or a proc
+          srch = cfg['search']
+          map = {
+            'spectrum' => {
+              # not legit??:
+               'parent mass type' => srch['parent_mass_type'],
+               'fragment mass type' => srch['fragment_mass_type'],
+               'parent monoisotopic mass error units' => convert_mass_error_units(cfg.parent_mass_error_units),
+               'fragment monoisotopic mass error units' => convert_mass_error_units(cfg.fragment_mass_error_units),
+               'fragment monoisotopic mass error' => cfg.mass_error_width(cfg.fragment_mass_error_distances),
+          }
+          }
+          map.each do |maps_from,maps_to|
+            if maps_to.is_a?(String)
+              @config['spectrum'] [maps_from]
+
+
+        end
+
 
         # sets all params back to default (clearing every other key/val pair)
         # returns self for chaining

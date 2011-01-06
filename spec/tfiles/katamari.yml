@@ -11,13 +11,30 @@ search:
     run: true
   tide:
     run: false
-  # use mascot specification
+  # must be ids from:
+  # http://psidev.cvs.sourceforge.net/psidev/psi/mod/data/PSI-MOD.obo
   modifications:
     static: 
-    - Carbamidomethyl (C)
+    # Carbamidomethyl (C) (CamCys, or carbamidomethylc [omssa])
+    - MOD:01060
     variable:
-    - Oxidation (M)
-organism: human
-enzyme: trypsin
+    # Oxidation (M) (MetO or oxym [omssa])
+    - MOD:00719
+    # phosphorylated residue
+    # - MOD:00696, STY
+    # is equivalent to:
+    # - MOD:00046  # phosphorylations [omssa]
+    # - MOD:00047  # phosphorylationt [omssa]
+    # - MOD:00048  # phosphorylationy [omssa]
+  organism: human
+  # only accepts mascot enzyme names (no double enzymes)
+  enzyme: Trypsin
+  spectrum:
+    # monoisotopic or average
+    parent_mass_type: monoisotopic
+    # follow the string notation shown [including spacing], error can be in ppm, daltons
+    parent_mass_error: -10,+10 ppm
+    fragment_mass_type: monoisotopic
+    fragment_mass_error: -0.4,+0.4 daltons
 quantitation:
   spectral_counts: true

@@ -6,6 +6,7 @@ describe "Katamari" do
     @config = TESTFILES + "/" + "katamari.yml"
     @sets_file = TESTFILES  + "/" + "sets_config.yml"
   end
+
   it "runs some searches" do
     kat = Katamari.new(@config)
     ok !kat.nil?
