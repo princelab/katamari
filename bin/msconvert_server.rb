@@ -34,5 +34,6 @@ loop do
   #system "scriptit.bat " + filename + ".raw"
   
   puts "Output file in: #{full_output_dir_path}"
+  puts "Output file is: #{full_output_dir_path}"
   client.close # Disconnect from the client
 end
