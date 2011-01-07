@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby
+
 require 'socket'
 require 'fileutils'
 require 'shellwords'
@@ -21,7 +23,8 @@ loop do
   client = server.accept
   rawfilename_with_input_path_from_basedir = client.gets.chomp
   if rawfilename_with_input_path_from_basedir == "--help"
-    client.puts `#{MSCONVERT_CMD}`
+    reply = `#{MSCONVERT_CMD} 2>&1`
+    client.puts reply
   else
     (output_path_from_basedir, other_args) = 2.times.map { client.gets.chomp }
 
@@ -36,18 +39,13 @@ loop do
 
     FileUtils.mkpath(full_output_dir_path)
 
-    cmd = [MSCONVERT_CMD, full_path_to_rawfile.gsub("/","\\"), "-o " + full_output_dir_path.gsub("/","\\"), other_args].join(" ")
+    fs = File::SEPARATOR
+    cmd = [MSCONVERT_CMD, full_path_to_rawfile.gsub("/",fs), "-o " + full_output_dir_path.gsub("/",fs), other_args].join(" ")
     # should sanitize the input since we're running it all in one command
 
     system cmd
 
-    if File.exist?(full_outputfile_path)
-      client.puts "done"
-      puts "success"
-    else
-      client.puts "fail"
-      puts "fail"
-    end
+    client.puts "done"
     puts "executed: #{cmd}"
   end
   client.close # Disconnect from the client

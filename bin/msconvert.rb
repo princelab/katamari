@@ -1,27 +1,27 @@
 #!/usr/bin/env ruby
 
-
-def has_program?(program)
-  ENV['PATH'].split(File::PATH_SEPARATOR).any? do |directory|
-    File.executable?(File.join(directory, program.to_s))
-  end
-end
-
 CLIENT_BIN = "msconvert_client.rb"
-
-executable = 
-  if has_program?(CLIENT_BIN)
-    CLIENT_BIN
-  else
-    File.join(File.dirname(File.expand_path(__FILE__)), CLIENT_BIN)
-  end
+executable = CLIENT_BIN
 
 
 if ARGV.size == 0
-  puts executable
-  reply = `#{executable} --help`
-  puts reply
+  puts "usage: #{File.basename(__FILE__)} [OPTIONS] <file>.raw ..."
+  puts "output: <file>.mzML ..."
+  puts "options:"
+  puts "      --msconvert-help     show msconvert usage and exit"
+  puts ""
+  puts "*** passes through ALL msconvert options ***"
+  puts "avoid these opts (unecessary): -f/--filelist and -e/--ext"
   exit
+end
+
+if ARGV.include?("--msconvert-help")
+ puts(`#{executable} --help`)
+ exit
+end
+
+unless (ARGV.include?("-z") || ARGV.include?("--zlib"))
+  STDERR.puts "are you sure you don't want binary data compression? (hint: '-z')"
 end
 
 (args, files) = ARGV.partition {|v| v[/^-/] }

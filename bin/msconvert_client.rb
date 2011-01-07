@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-require 'optparse'
 require 'fileutils'
 require 'katamari/msconvert'
 
@@ -28,8 +27,6 @@ def putsv(*args)
 end
 
 opts = OptionParser.new do |op|
-  op.banner = "usage: #{File.basename(__FILE__)} file.RAW <msconvert_options>"
-  op.separator "outputs: file.mz[X]ML"
   op.on("-h", "--help") do
     puts Katamari::Msconvert.new(SERVER_IP, PORT).usage
   end
@@ -37,6 +34,8 @@ end
 opts.parse!
 
 if ARGV.size == 0
+  op.banner = "usage: #{File.basename(__FILE__)} file.RAW <msconvert_options>"
+  op.separator "outputs: file.mzML (or other extension)"
   puts 
   exit
 end

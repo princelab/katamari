@@ -16,10 +16,21 @@ class Katamari
 
     def usage
       server = TCPSocket.open(@server_ip, @port)
-      server.puts("--help")
+      server.puts "--help"
       reply = server.read
       server.close
       reply
+    end
+
+    def expected_extension(args)
+      if args["--mzXML"]
+        ".mzXML"
+      elsif args["--mgf"]
+        ".mgf"
+      elsif args["--text"]
+        ".txt"
+      else ; ".mzML"
+      end
     end
 
     # if the BASE_DIR on the server is 'S:', then you are only specifying the
@@ -30,7 +41,7 @@ class Katamari
     #
     # returns the relative path (from BASE_DIR) to the output file
     def convert(relative_path_on_server, other_args="-z")
-      new_ext = other_args["--mzXML"] ? ".mzXML" : ".mzML"
+      new_ext = expected_extension(other_args)
       pn = Pathname.new(relative_path_on_server) 
       outputdir = pn.dirname
       (path, fn) = pn.split
@@ -46,8 +57,6 @@ class Katamari
       reply = server.read.chomp
       if reply == "done"
         server.close
-      elsif reply == "fail"
-        raise "server can't find the outputted file!"
       else
         raise "something bad happened with the conversion! (didn't get confirmation of success...)"
       end

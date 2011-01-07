@@ -10,6 +10,7 @@ Jeweler::Tasks.new do |gem|
   gem.description = %Q{katamari ("clod") is a mass spectrometry shotgun proteomics analysis pipeline.  It runs and compiles results from various search engines to identify and quantitate peptides and proteins.}
   gem.email = "jtprince@gmail.com"
   gem.homepage = "http://github.com/jtprince/katamari"
+  gem.rubyforge_project = 'mspire'
   gem.authors = ["John Prince", "Jesse Jashinsky"]
   gem.add_development_dependency "spec-more", ">= 0"
 end
