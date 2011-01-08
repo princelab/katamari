@@ -51,6 +51,8 @@ end
 unless (ARGV.include?("-z") || ARGV.include?("--zlib"))
   if ARGV.include?("--no-compress")
     ARGV.delete("--no-compress")
+  elsif ARGV.include?("--mgf") || ARGV.include?("--text")
+    # okay to not compress
   else
     msg = []
     msg << ""
@@ -67,6 +69,7 @@ end
 option_string = args.join(" ")
 
 files.each do |file|
-  output_file = client.convert_on_client(file, option_string, BASE_DIR, MOUNT_TMP_DIR)
+  (output_file, msg) = client.convert_on_client(file, option_string, BASE_DIR, MOUNT_TMP_DIR)
   puts "created: #{output_file}"
+  puts msg
 end

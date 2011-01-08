@@ -18,6 +18,19 @@ puts "starting up #{File.basename(__FILE__)} and listening..."
 
 # this is the root where you want all conversion to take place
 
+
+def expected_extension(args_string)
+  if args_string["--mzXML"]
+    ".mzXML"
+  elsif args_string["--mgf"]
+    ".mgf"
+  elsif args_string["--text"]
+    ".txt"
+  else ; ".mzML"
+  end
+end
+
+
 server = TCPServer.open(PORT) # Socket to listen on port 2200
 loop do
   client = server.accept
@@ -28,7 +41,7 @@ loop do
   else
     (output_path_from_basedir, other_args) = 2.times.map { client.gets.chomp }
 
-    new_ext = other_args["--mzXML"] ? ".mzXML" : ".mzML"
+    new_ext = expected_extension(other_args)
 
     basename = rawfilename_with_input_path_from_basedir.split(/[\/\\]/).last
     base_noext = basename.chomp(File.extname(basename))
@@ -43,9 +56,10 @@ loop do
     cmd = [MSCONVERT_CMD, full_path_to_rawfile.gsub("/",fs), "-o " + full_output_dir_path.gsub("/",fs), other_args].join(" ")
     # should sanitize the input since we're running it all in one command
 
-    system cmd
+    reply = `#{cmd} 2>&1`
 
     client.puts "done"
+    client.puts reply
     puts "executed: #{cmd}"
   end
   client.close # Disconnect from the client

@@ -91,7 +91,7 @@ class Katamari
           else
             mm.cp_under_mount(filename, subdir)
           end
-        rel_output = convert_on_server(mm.relative_path(full_filename_under_mount))
+        rel_output = convert_on_server(mm.relative_path(full_filename_under_mount), other_args_st)
         full_output = mm.full_path(rel_output)
 
         if under_mount
@@ -110,8 +110,9 @@ class Katamari
       #     # file on server is "S:/RAW/tmp/test.raw" with BASE_DIR 'S:'
       #     Katamari::Msconvert.convert("RAW/tmp/test.raw")
       #
-      # returns the relative path (from BASE_DIR) to the output file
-      def convert_on_server(relative_path_on_server, other_args_st="-z")
+      # returns the relative path (from BASE_DIR) to the output file and the
+      # output: [rel_path, conversion_output]
+      def convert_on_server(relative_path_on_server, other_args_st="")
         new_ext = expected_extension(other_args_st)
         pn = Pathname.new(relative_path_on_server) 
         outputdir = pn.dirname
@@ -125,13 +126,14 @@ class Katamari
         server.puts outputdir
         server.puts other_args_st
 
-        reply = server.read.chomp
-        if reply == "done"
-          server.close
-        else
-          raise "something bad happened with the conversion! (didn't get confirmation of success...)"
+        reply = nil
+        loop do
+          reply = server.read
+          break if reply =~ /done/
+          sleep 0.5
+          print "."
         end
-        rel_outfile
+        [rel_outfile, reply]
       end
     end
   end
