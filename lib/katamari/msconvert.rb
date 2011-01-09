@@ -8,45 +8,70 @@ class Katamari
   class Msconvert
     class TCP
       class MountMapper
-        attr_accessor :client_mount_dir
-        attr_reader :client_mount_dir_pieces
-        def initialize(client_mount_dir)
-          @client_mount_dir = File.expand_path(client_mount_dir)
-          @client_mount_dir_pieces = split_filename(@client_mount_dir)
+        attr_accessor :mount_dir
+        attr_reader :mount_dir_pieces
+        def initialize(mount_dir)
+          @mount_dir = File.expand_path(mount_dir)
+          @mount_dir_pieces = split_filename(@mount_dir)
         end
 
+        # OS independent filename splitter "/path/to/file" =>
+        # ['path','to','file']
         def split_filename(fn)
           fn.split(/[\/\\]/)
         end
 
+        # OS independent basename getter
+        def basename(fn)
+          split_filename(fn).last
+        end
+
         def under_mount?(filename)
-          split_filename(File.expand_path(filename))[0,@client_mount_dir_pieces.size] == @client_mount_dir_pieces
+          split_filename(File.expand_path(filename))[0,@mount_dir_pieces.size] == @mount_dir_pieces
         end
 
         # assumes the file is already under the mount
         # returns its path relative to the mount
         def relative_path(filename)
           pieces = split_filename(File.expand_path(filename))
-          File.join(pieces[@client_mount_dir_pieces.size..-1])
+          File.join(pieces[@mount_dir_pieces.size..-1])
         end
 
         # move the file under the mount (and optionally to a subdirectory under the mount)
         # returns the expanded path of the file
         def cp_under_mount(filename, mount_subdir=nil)
-          dest = File.join(@client_mount_dir, mount_subdir || "", File.basename(filename))
+          dest = File.join(@mount_dir, mount_subdir || "", File.basename(filename))
           FileUtils.cp( filename, dest )
           dest
         end
 
         def full_path(relative_filename)
-          File.join(@client_mount_dir, relative_filename)
+          File.join(@mount_dir, relative_filename)
         end
-        
       end
 
-      CONFIG = {
-        :convert_folder => 'tmp'
-      }
+
+      def self.msconvert_server(msconvert_cmd, client, base_dir="/")
+        rel_filename = client.gets.chomp
+        if rel_filename == "--help"
+          reply = `#{msconvert_cmd} 2>&1`
+          client.puts reply
+        else
+          (output_path_from_basedir, other_args_st) = 2.times.map { client.gets.chomp }
+          new_ext = expected_extension(other_args_st)
+          mm = MountMapper.new(base_dir)
+          basename = mm.basename(rel_filename) 
+          full_path_to_rawfile = mm.full_path(rel_filename)
+          full_output_dir_path = mm.full_path(output_path_from_basedir)
+          FileUtils.mkpath(full_output_dir_path)
+          fs = File::SEPARATOR
+          cmd = [msconvert_cmd, full_path_to_rawfile.gsub("/",fs), "-o " + full_output_dir_path.gsub("/",fs), other_args].join(" ")
+          # should sanitize the input since we're running it all in one command
+          reply = `#{cmd} 2>&1`
+          client.puts "done\n#{reply}"
+          puts "executed: #{cmd}"
+        end
+      end
 
       attr_accessor :server_ip, :port
 
@@ -54,9 +79,6 @@ class Katamari
       # msconvert_server.rb
       def initialize(server_ip, port)
         (@server_ip, @port) = server_ip, port
-      end
-
-      def live?
       end
 
       def usage
@@ -67,6 +89,8 @@ class Katamari
         reply
       end
 
+      # takes the argument string and determines what the output file
+      # extension will be.  Doesn't work on the -e/--ext flag yet.
       def expected_extension(args)
         if args["--mzXML"]
           ".mzXML"
@@ -78,6 +102,7 @@ class Katamari
         end
       end
 
+ 
       # the mount dir is expected to match up with the server mount dir (in
       # terms of the files on it, not the value itself necessarily)
       # basically, this ensures that the file is under the proper mount
@@ -130,7 +155,6 @@ class Katamari
         loop do
           reply = server.read
           break if reply =~ /done/
-          sleep 0.5
           print "."
         end
         [rel_outfile, reply]
