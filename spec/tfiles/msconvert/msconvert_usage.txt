@@ -1,0 +1,77 @@
+Usage: msconvert [options] [filemasks]
+Convert mass spec data file formats.
+
+Return value: # of failed files.
+
+Options:
+  -f [ --filelist ] arg    : specify text file containing filenames
+  -o [ --outdir ] arg (=.) : set output directory [.]
+  -c [ --config ] arg      : configuration file (optionName=value)
+  -e [ --ext ] arg         : set extension for output files [mzML|mzXML|mgf|txt
+                           ]
+  --mzML                   : write mzML format [default]
+  --mzXML                  : write mzXML format
+  --mgf                    : write Mascot generic format
+  --text                   : write ProteoWizard internal text format
+  -v [ --verbose ]         : display detailed progress information
+  --64                     : set default binary encoding to 64-bit precision 
+                           [default]
+  --32                     : set default binary encoding to 32-bit precision
+  --mz64                   : encode m/z values in 64-bit precision [default]
+  --mz32                   : encode m/z values in 32-bit precision
+  --inten64                : encode intensity values in 64-bit precision
+  --inten32                : encode intensity values in 32-bit precision 
+                           [default]
+  --noindex                : do not write index
+  -i [ --contactInfo ] arg : filename for contact info
+  -z [ --zlib ]            : use zlib compression for binary data
+  -g [ --gzip ]            : gzip entire output file (adds .gz to filename)
+  --filter arg             : add a spectrum list filter
+                           filter options:
+                           index [indexBegin,indexEnd] ...
+                           mzWindow [mzLow,mzHigh]
+                           peakPicking prefer vendor peak picking: <true|false>
+                              [msLevelsBegin,msLevelsEnd] ...
+                           precursorRecalculation  (based on ms1 data)
+                           scanNumber [scanNumberBegin,scanNumberEnd] ...
+                           scanEvent [scanEventBegin,scanEventEnd] ...
+                           scanTime [scanTimeLow,scanTimeHigh]
+                           stripIT  (strip ion trap ms1 scans)
+                           
+                           
+Examples:
+
+# convert data.RAW to data.mzML
+msconvert data.RAW
+
+# convert data.RAW to data.mzXML
+msconvert data.RAW --mzXML
+
+# put output file in my_output_dir
+msconvert data.RAW -o my_output_dir
+
+# extract scan indices 5...10 and 20...25
+msconvert data.RAW --filter "index [5,10] [20,25]"
+
+# multiple filters: select scan numbers and recalculate precursors
+msconvert data.RAW --filter "scanNumber [500,1000]" --filter "precursorRecalculation"
+
+# use a configuration file
+msconvert data.RAW -c config.txt
+
+# example configuration file
+mzXML=true
+zlib=true
+filter="index [3,7]"
+filter="precursorRecalculation"
+
+
+Questions, comments, and bug reports:
+http://proteowizard.sourceforge.net
+support@proteowizard.org
+
+ProteoWizard release: 1.6.1260 (2009-09-04)
+ProteoWizard MSData: 1.6.1260 (2009-09-04)
+ProteoWizard Analysis: 1.6.1258 (2009-09-04)
+Build date: Sep  4 2009 09:41:04
+

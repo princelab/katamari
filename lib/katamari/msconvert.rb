@@ -7,6 +7,9 @@ class Katamari
   # depends on a computer running msconvert_server.rb (found in bin dir)
   class Msconvert
     class TCP
+      DEFAULT_PORT = 22907  # arbitrary
+      MSCONVERT_CMD_WIN = "msconvert.exe"
+
       class MountMapper
         attr_accessor :mount_dir
         attr_reader :mount_dir_pieces
@@ -50,12 +53,16 @@ class Katamari
         end
       end
 
+      def self.wrap_reply(st)
+        "<reply>\n#{st}\n</reply>"
+      end
 
       def self.msconvert_server(msconvert_cmd, client, base_dir="/")
         rel_filename = client.gets.chomp
+        reply = nil
         if rel_filename == "--help"
           reply = `#{msconvert_cmd} 2>&1`
-          client.puts reply
+          puts "executed: #{msconvert_cmd}"
         else
           (output_path_from_basedir, other_args_st) = 2.times.map { client.gets.chomp }
           new_ext = expected_extension(other_args_st)
@@ -68,9 +75,9 @@ class Katamari
           cmd = [msconvert_cmd, full_path_to_rawfile.gsub("/",fs), "-o " + full_output_dir_path.gsub("/",fs), other_args].join(" ")
           # should sanitize the input since we're running it all in one command
           reply = `#{cmd} 2>&1`
-          client.puts "done\n#{reply}"
           puts "executed: #{cmd}"
         end
+        client.puts wrap_reply(reply)
       end
 
       attr_accessor :server_ip, :port
@@ -84,7 +91,7 @@ class Katamari
       def usage
         server = TCPSocket.open(@server_ip, @port)
         server.puts "--help"
-        reply = server.read
+        reply = cleanup_reply(get_reply(server))
         server.close
         reply
       end
@@ -102,7 +109,7 @@ class Katamari
         end
       end
 
- 
+
       # the mount dir is expected to match up with the server mount dir (in
       # terms of the files on it, not the value itself necessarily)
       # basically, this ensures that the file is under the proper mount
@@ -129,6 +136,28 @@ class Katamari
         end
       end
 
+      # cleans the reply and also uses newline as line separator
+      def cleanup_reply(reply)
+        pieces = reply.split(/\n\r?/)
+        header_i = pieces.index {|v| v =~ /<reply>/ }
+        trailer_i = pieces.rindex {|v| v =~ /<\/reply>/ }
+        pieces[(header_i+1)...trailer_i].join("\n")
+      end
+
+      # loops and reads from the server until the end reply is sent
+      def get_reply(server)
+        # TODO: add a timeout?
+        reply = ""
+        loop do
+          reply << server.read
+          break if reply =~ /<\/reply>/m
+          p reply
+          puts "LISTENING"
+          sleep 0.2
+        end
+        reply
+      end
+
       # if the BASE_DIR on the server is 'S:', then you are only specifying the
       # relative path from there (use unix style slashes)
       #
@@ -151,12 +180,8 @@ class Katamari
         server.puts outputdir
         server.puts other_args_st
 
-        reply = nil
-        loop do
-          reply = server.read
-          break if reply =~ /done/
-          print "."
-        end
+        reply = cleanup_reply(get_reply(server))
+        server.close
         [rel_outfile, reply]
       end
     end
