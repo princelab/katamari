@@ -16,9 +16,10 @@ class Katamari
         def run
           server = TCPServer.new(@port)
           loop do
-            Thread.start(server.accept) do |client|
+            Thread.start(self, server.accept) do |srv_obj, client|
+
               puts "accepted client: #{client}"
-              server.serve(client) 
+              srv_obj.serve(client) 
             end
           end
         end
