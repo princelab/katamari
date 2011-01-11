@@ -9,13 +9,17 @@ class Katamari
     class TCP
       DEFAULT_PORT = 22907  # arbitrary
       MSCONVERT_CMD_WIN = "msconvert.exe"
+      # temporary directory under the server mount directory
+      DEFAULT_MOUNT_TMP_SUBDIR = "tmp"
 
       class MountMapper
         attr_accessor :mount_dir
         attr_reader :mount_dir_pieces
-        def initialize(mount_dir)
+        attr_accessor :tmp_subdir
+        def initialize(mount_dir, tmp_subdir=DEFAULT_MOUNT_TMP_SUBDIR)
           @mount_dir = File.expand_path(mount_dir)
           @mount_dir_pieces = split_filename(@mount_dir)
+          @tmp_subdir = tmp_subdir
         end
 
         # OS independent filename splitter "/path/to/file" =>
@@ -40,10 +44,10 @@ class Katamari
           File.join(pieces[@mount_dir_pieces.size..-1])
         end
 
-        # move the file under the mount (and optionally to a subdirectory under the mount)
+        # move the file under the mount.  If @tmp_subdir is defined, it will use that directory.
         # returns the expanded path of the file
-        def cp_under_mount(filename, mount_subdir=nil)
-          dest = File.join(@mount_dir, mount_subdir || "", File.basename(filename))
+        def cp_under_mount(filename)
+          dest = File.join(@mount_dir, tmp_subdir || "", File.basename(filename))
           FileUtils.cp( filename, dest )
           dest
         end
@@ -58,6 +62,7 @@ class Katamari
       end
 
       def self.msconvert_server(msconvert_cmd, client, base_dir="/")
+        raise ArgumentError, "msconvert can't handle paths with spaces so 'base_dir' must not have spaces!" if base_dir[" "]
         rel_filename = client.gets.chomp
         reply = nil
         if rel_filename == "--help"
@@ -65,20 +70,40 @@ class Katamari
           puts "executed: #{msconvert_cmd}"
         else
           (output_path_from_basedir, other_args_st) = 2.times.map { client.gets.chomp }
-          new_ext = expected_extension(other_args_st)
+          new_ext = Katamari::Msconvert::TCP.expected_extension(other_args_st)
           mm = MountMapper.new(base_dir)
           basename = mm.basename(rel_filename) 
           full_path_to_rawfile = mm.full_path(rel_filename)
           full_output_dir_path = mm.full_path(output_path_from_basedir)
-          FileUtils.mkpath(full_output_dir_path)
+          FileUtils.mkpath(full_output_dir_path) unless File.directory?(full_output_dir_path)
           fs = File::SEPARATOR
-          cmd = [msconvert_cmd, full_path_to_rawfile.gsub("/",fs), "-o " + full_output_dir_path.gsub("/",fs), other_args].join(" ")
+          cmd = [msconvert_cmd, wrap_filename(full_path_to_rawfile.gsub("/",fs)), "-o " + wrap_filename(full_output_dir_path.gsub("/",fs)), other_args_st].join(" ")
           # should sanitize the input since we're running it all in one command
+          puts "to execute: #{cmd}"
           reply = `#{cmd} 2>&1`
-          puts "executed: #{cmd}"
+          puts "done!"
         end
         client.puts wrap_reply(reply)
       end
+
+      def self.wrap_filename(filename)
+        %Q{"#{filename}"}
+        filename
+      end
+
+      # takes the argument string and determines what the output file
+      # extension will be.  Doesn't work on the -e/--ext flag yet.
+      def self.expected_extension(args)
+        if args["--mzXML"]
+          ".mzXML"
+        elsif args["--mgf"]
+          ".mgf"
+        elsif args["--text"]
+          ".txt"
+        else ; ".mzML"
+        end
+      end
+
 
       attr_accessor :server_ip, :port
 
@@ -96,44 +121,34 @@ class Katamari
         reply
       end
 
-      # takes the argument string and determines what the output file
-      # extension will be.  Doesn't work on the -e/--ext flag yet.
-      def expected_extension(args)
-        if args["--mzXML"]
-          ".mzXML"
-        elsif args["--mgf"]
-          ".mgf"
-        elsif args["--text"]
-          ".txt"
-        else ; ".mzML"
-        end
-      end
-
-
       # the mount dir is expected to match up with the server mount dir (in
       # terms of the files on it, not the value itself necessarily)
       # basically, this ensures that the file is under the proper mount
       # (copies it if necessary).
-      def convert_on_client(filename, other_args_st, mount_dir, subdir=nil)
-        mm = MountMapper.new(mount_dir)
+      def convert_on_client(filename, other_args_st, mount_dir, tmp_subdir=DEFAULT_MOUNT_TMP_SUBDIR)
+        mm = MountMapper.new(mount_dir, tmp_subdir)
         under_mount = mm.under_mount?(filename)
         full_filename_under_mount = 
           if under_mount
             File.expand_path(filename)
           else
-            mm.cp_under_mount(filename, subdir)
+            mm.cp_under_mount(filename)
           end
-        rel_output = convert_on_server(mm.relative_path(full_filename_under_mount), other_args_st)
+        (rel_output, msconvert_reply) = convert_on_server(mm.relative_path(full_filename_under_mount), other_args_st)
         full_output = mm.full_path(rel_output)
+        raise RuntimeError, "output file does not exist under the mount!:\n#{full_output}" unless File.exist?(full_output)
 
-        if under_mount
-          full_output
-        else
-          outdir = File.dirname(File.expand_path(filename))
-          final_output = File.join(outdir, File.basename(full_output))
-          FileUtils.mv(full_output, final_output)
-          final_output
-        end
+        output_path = 
+          if under_mount
+            full_output
+          else
+            outdir = File.dirname(File.expand_path(filename))
+            final_output = File.join(outdir, File.basename(full_output))
+            FileUtils.mv(full_output, final_output)
+            final_output
+          end
+        raise RuntimeError, "output file does not exist!" unless File.exist?(output_path)
+        [output_path, msconvert_reply]
       end
 
       # cleans the reply and also uses newline as line separator
@@ -167,7 +182,13 @@ class Katamari
       # returns the relative path (from BASE_DIR) to the output file and the
       # output: [rel_path, conversion_output]
       def convert_on_server(relative_path_on_server, other_args_st="")
-        new_ext = expected_extension(other_args_st)
+        msg = "\n*********************************************************************\n"
+        msg << "msconvert cannot handle spaces in the file path (don't blame me)\n"
+        msg << "and you have one or more spaces in your path! (look carefully):\n"
+        msg << "#{relative_path_on_server}\n"
+        msg << "*********************************************************************\n"
+        raise ArgumentError, msg if relative_path_on_server[" "]
+        new_ext = Katamari::Msconvert::TCP.expected_extension(other_args_st)
         pn = Pathname.new(relative_path_on_server) 
         outputdir = pn.dirname
         (path, fn) = pn.split

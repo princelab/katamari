@@ -18,10 +18,11 @@ PORT = Katamari::Msconvert::TCP::DEFAULT_PORT
 ################################################################################
 
 puts "starting up #{File.basename(__FILE__)} and listening..."
-server = TCPServer.open(Katamari::Msconvert::TCP::DEFAULT_PORT) # Socket to listen on port 2200
+server = TCPServer.open(PORT) # Socket to listen on port 2200
 
 loop do
   client = server.accept
+  puts "accepted client: #{client}"
   Katamari::Msconvert::TCP.msconvert_server(MSCONVERT_CMD, client, BASE_DIR)
   client.close # Disconnect from the client
 end

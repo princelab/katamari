@@ -4,15 +4,31 @@ require 'fileutils'
 
 require 'katamari/msconvert'
 
+# the tests are organized a little wierd but this was how I was able to get a
+# mock TCP server working...
+
 # you may need to change this if you want to test local
 REAL_SERVER_IP = "192.168.101.185"
 EXPECTED_USAGE = IO.read(TESTFILES + '/msconvert/msconvert_usage.txt')
 INPUT_CHECK = lambda {|input| input.matches /--help/}
 
 shared "an msconvert client giving usage" do
-  it 'works' do
+  it 'gives usage' do
     client = Katamari::Msconvert::TCP.new(@ip_address, @port)
     client.usage.is EXPECTED_USAGE
+  end
+end
+
+shared "an msconvert client getting zipped mzML" do
+  it 'works' do
+    expected_output_path = @filename.sub(File.extname(@filename), @ext)
+    client = Katamari::Msconvert::TCP.new(@ip_address, @port)
+    ok !File.exist?(expected_output_path)
+    output_path, reply = client.convert_on_client(@filename, "-z", @mount_dir)
+    output_path.is expected_output_path
+    ok File.exist?(output_path)
+    IO.read(output_path).matches /zlib compression/m
+    reply.matches /writing output file/
   end
 end
 
@@ -52,15 +68,7 @@ class MockMsconvertServer
   end
 end
 
-#shared "an msconvert client getting file converted" do
-#  it 'works' do
-#    client = Katamari::Msconvert::TCP.new(@ip_address, @port)
-#    client.client_convert
-#  end
-#end
-#
 
-# had this working okay at one time but can't get it working currently
 
 describe 'msconvert client + mock server' do
   before do
@@ -73,7 +81,6 @@ describe 'msconvert client + mock server' do
   after do
     @mock_server.close
   end
-
   behaves_like "an msconvert client giving usage"
 end
 
@@ -83,7 +90,6 @@ describe 'msconvert client + real server' do
     @port = Katamari::Msconvert::TCP::DEFAULT_PORT
   end
   behaves_like "an msconvert client giving usage"
-  #behaves_like "an msconvert client getting file converted"
 end
 
 

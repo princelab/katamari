@@ -9,7 +9,8 @@ require 'katamari/msconvert'
 
 # ip address of computer running msconvert_server.rb
 SERVER_IP = "192.168.101.185"
-PORT = 22007
+# can change if you also set it for the server
+PORT = Katamari::Msconvert::TCP::DEFAULT_PORT
 
 # client mount point (client side equivalent to msconvert_server.rb)
 BASE_DIR = "#{ENV['HOME']}/lab"
@@ -58,7 +59,7 @@ unless (ARGV.include?("-z") || ARGV.include?("--zlib"))
     msg << ""
     msg << "************************************************************"
     msg << "I'm pretty sure you wanted binary data compression!"
-    msg << "Run with '--no-compress' to override this fail"
+    msg << "Run with '--no-compress' to override this behavior"
     msg << "or '-z' to zlib compress your binary data."
     msg << "************************************************************"
     raise ArgumentError, msg.join("\n")
@@ -70,6 +71,8 @@ option_string = args.join(" ")
 
 files.each do |file|
   (output_file, msg) = client.convert_on_client(file, option_string, BASE_DIR, MOUNT_TMP_DIR)
-  puts "created: #{output_file}"
+  puts "*************** <begin msconvert output> ******************"
   puts msg
+  puts "**************** <end msconvert output> *******************"
+  puts "created: #{output_file}"
 end
