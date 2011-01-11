@@ -2,6 +2,9 @@
 
 class Katamari
   module SearchEngine
+    def search_input_filetype
+      :mgf
+    end
   end
 end
 

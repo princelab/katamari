@@ -1,4 +1,7 @@
 ---
+convert:
+  # true: converts to necessary file, otherwise will use file if it already exists
+  overwrite: false
 search:
   # username: jtprince
   # useremail: jtprince@chem.byu.edu
