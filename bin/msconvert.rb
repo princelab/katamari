@@ -18,6 +18,8 @@ BASE_DIR = "#{ENV['HOME']}/lab"
 # A tmp directory should also exist under the mount for files that aren't
 # already in the path
 MOUNT_TMP_DIR = "tmp" 
+
+MSCONVERT_ARGS_W_VALS = %w(-o --outdir -c --config -e --ext -i --contactInfo --filter)
 ###############################################################################
 
 $VERBOSE = (ARGV.include?("-v") || ARGV.include?("--verbose"))
@@ -30,11 +32,15 @@ if ARGV.size == 0
   puts "--text   <file>.txt ..."
   puts ""
   puts "options:"
+  puts "         --no-compress       msconvert.rb expects the -z or --zlib flag for"
+  puts "                             mz[X]ML conversion and will abort unless it sees it."
+  puts "                             This flag overrides this expectation."
   puts "        --msconvert-help     show msconvert usage and exit"
   puts "    -v  --verbose" 
   puts ""
   puts "*** passes through ALL msconvert options ***"
-  puts "avoid these opts (unecessary): -f/--filelist and -e/--ext"
+  puts "avoid these opts (unecessary): "
+  puts "  -f/--filelist, -e/--ext"
   exit
 end
 
@@ -58,7 +64,7 @@ unless (ARGV.include?("-z") || ARGV.include?("--zlib"))
     msg = []
     msg << ""
     msg << "************************************************************"
-    msg << "I'm pretty sure you wanted binary data compression!"
+    msg << "Pretty sure you wanted binary data compression!"
     msg << "Run with '--no-compress' to override this behavior"
     msg << "or '-z' to zlib compress your binary data."
     msg << "************************************************************"
@@ -66,8 +72,9 @@ unless (ARGV.include?("-z") || ARGV.include?("--zlib"))
   end
 end
 
-(args, files) = ARGV.partition {|v| v[/^-/] }
-option_string = args.join(" ")
+(arguments, options, flags) = Katamari::Msconvert::MountedServer.classify_arguments(ARGV.dup.to_a, MSCONVERT_ARGS_W_VALS)
+
+option_string = (options.flatten + flags).join(" ")
 
 files.each do |file|
   (output_file, msg) = client.convert_on_client(file, option_string, BASE_DIR, MOUNT_TMP_DIR)
