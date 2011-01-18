@@ -96,7 +96,7 @@ class Katamari
         # relative_output_dir argument instead.
         def convert_on_server(relative_path_on_server, other_args_st="", relative_output_dir=nil)
           [relative_path_on_server, relative_output_dir].each {|path| check_no_spaces(path) }
-          new_ext = Katamari::Msconvert::TCP.expected_extension(other_args_st)
+          new_ext = expected_extension(other_args_st)
           pn = Pathname.new(relative_path_on_server) 
           outputdir = pn.dirname
           (path, fn) = pn.split

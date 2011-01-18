@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'fileutils'
-require 'katamari/msconvert'
+require 'katamari/msconvert/mounted_server'
 
 ###############################################################################
 # This configuration assumes that the local computer and remote server
@@ -10,7 +10,7 @@ require 'katamari/msconvert'
 # ip address of computer running msconvert_server.rb
 SERVER_IP = "192.168.101.185"
 # can change if you also set it for the server
-PORT = Katamari::Msconvert::TCP::DEFAULT_PORT
+PORT = Katamari::Msconvert::MountedServer::DEFAULT_PORT
 
 # client mount point (client side equivalent to msconvert_server.rb)
 BASE_DIR = "#{ENV['HOME']}/lab"
@@ -45,7 +45,7 @@ if ARGV.size == 0
 end
 
 begin
-  client = Katamari::Msconvert::TCP.new(SERVER_IP, PORT)
+  client = Katamari::Msconvert::MountedServer::Client.new(SERVER_IP, PORT)
 rescue Errno::ETIMEDOUT
   abort "can't seem to be able to reach the server at that port! (exiting)"
 end
@@ -76,7 +76,7 @@ end
 
 option_string = (options.flatten + flags).join(" ")
 
-files.each do |file|
+arguments.each do |file|
   (output_file, msg) = client.convert_on_client(file, option_string, BASE_DIR, MOUNT_TMP_DIR)
   puts "*************** <begin msconvert output> ******************"
   puts msg

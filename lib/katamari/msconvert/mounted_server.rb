@@ -48,7 +48,7 @@ class Katamari
         msg << "and you have one or more spaces in your path! (look carefully):\n"
         msg << "#{path}\n"
         msg << "*********************************************************************\n"
-        raise ArgumentError, msg if path[" "]
+        raise ArgumentError, msg if (path && path[" "])
       end
 
       module_function

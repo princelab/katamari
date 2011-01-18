@@ -16,10 +16,15 @@ class Katamari
         def run
           server = TCPServer.new(@port)
           loop do
-            Thread.start(self, server.accept) do |srv_obj, client|
+            Thread.start(self, server.accept, Thread.current) do |srv_obj, client, parent_thread|
 
               puts "accepted client: #{client}"
-              srv_obj.serve(client) 
+              begin
+                srv_obj.serve(client) 
+              rescue Exception => e
+                parent_thread.raise e
+              end
+              
             end
           end
         end
@@ -38,7 +43,7 @@ class Katamari
               full_output_dir_path = @mapper.full_path(output_path_from_basedir)
               FileUtils.mkpath(full_output_dir_path) unless File.directory?(full_output_dir_path)
               fs = File::SEPARATOR
-              cmd = [@msconvert_cmd, wrap_filename(full_path_to_rawfile.gsub("/",fs)), "-o " + wrap_filename(full_output_dir_path.gsub("/",fs)), other_args_st].join(" ")
+              cmd = [@msconvert_cmd, full_path_to_rawfile.gsub("/",fs), "-o " + full_output_dir_path.gsub("/",fs), other_args_st].join(" ")
               # should sanitize the input since we're running it all in one command
               cmd
             end
