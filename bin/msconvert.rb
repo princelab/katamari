@@ -1,85 +1,108 @@
 #!/usr/bin/env ruby
 
-require 'fileutils'
-require 'katamari/msconvert/mounted_server'
+require 'babypool'
+require 'katamari/util'
 
-###############################################################################
-# This configuration assumes that the local computer and remote server
-# both have access to the same filesystem
+######################################################################
+# see: https://github.com/princelab/katamari/wiki/msconvert-on-linux
+# CONSTANTS:
 
-# ip address of computer running msconvert_server.rb
-SERVER_IP = "192.168.101.185"
-# can change if you also set it for the server
-PORT = Katamari::Msconvert::MountedServer::DEFAULT_PORT
+MSCONVERT_BASE_CMD = "wine /usr/local/pwiz-win/msconvert.exe"
+SHOW_WINE_MSGS = false
+# could set to 2 or 4 also
+$MULTITHREAD = true
+CORES_TO_USE = Katamari::Util.number_of_processors
+######################################################################
 
-# client mount point (client side equivalent to msconvert_server.rb)
-BASE_DIR = "#{ENV['HOME']}/lab"
-
-# A tmp directory should also exist under the mount for files that aren't
-# already in the path
-MOUNT_TMP_DIR = "tmp" 
-
-MSCONVERT_ARGS_W_VALS = %w(-o --outdir -c --config -e --ext -i --contactInfo --filter)
-###############################################################################
-
-$VERBOSE = (ARGV.include?("-v") || ARGV.include?("--verbose"))
+def has_args?(array, *others)
+  others.any? {|fl| array.include?(fl) }
+end
 
 if ARGV.size == 0
-  puts "usage: #{File.basename(__FILE__)} [OPTIONS] <file>.raw ..."
-  puts "output:  <file>.mzML ..."
-  puts "--mzXML  <file>.mzXML ..."
-  puts "--mgf    <file>.mgf ..."
-  puts "--text   <file>.txt ..."
+  puts "usage: #{File.basename(__FILE__)} /path/to/<file>.raw ..."
+  puts "outputs: /path/to/<file>.mzXML ..."
+  puts "  applicable arguments are passed through"
+  puts "  avoid -e/--ext unless necessary to specify file extension (rather than type)"
   puts ""
-  puts "options:"
-  puts "         --no-compress       msconvert.rb expects the -z or --zlib flag for"
-  puts "                             mz[X]ML conversion and will abort unless it sees it."
-  puts "                             This flag overrides this expectation."
-  puts "        --msconvert-help     show msconvert usage and exit"
-  puts "    -v  --verbose" 
+  puts "flags passed in by default (you don't need to set them):"
+  puts "  --zlib             use --no-compress to remove"
+  puts "  --mzXML            use --mzML/--mgf/--text to override"
+  puts "  --outdir           defaults to the directory the file sits in"
+  puts "                     (set this value to overide the default)"
   puts ""
-  puts "*** passes through ALL msconvert options ***"
-  puts "avoid these opts (unecessary): "
-  puts "  -f/--filelist, -e/--ext"
+  puts "other options:"
+  puts "  --show-wine-msg    shows all wine output"
+  puts "  --no-multithread   don't multithread"
+  puts "  --msconvert-usage  show msconvert help message"
   exit
 end
 
-begin
-  client = Katamari::Msconvert::MountedServer::Client.new(SERVER_IP, PORT)
-rescue Errno::ETIMEDOUT
-  abort "can't seem to be able to reach the server at that port! (exiting)"
-end
+(files, options, flags) = Katamari::Util.classify_arguments(ARGV, %w(-f --filelist -o --outdir -c --config -e --ext -i --contactInfo --filter))
 
-if ARGV.include?("--msconvert-help")
-  puts client.usage
-  exit
-end
+ext_opt = options.find {|opt,val| opt =~ /^(-e|--ext)/ }
 
-unless (ARGV.include?("-z") || ARGV.include?("--zlib"))
-  if ARGV.include?("--no-compress")
-    ARGV.delete("--no-compress")
-  elsif ARGV.include?("--mgf") || ARGV.include?("--text")
-    # okay to not compress
-  else
-    msg = []
-    msg << ""
-    msg << "************************************************************"
-    msg << "Pretty sure you wanted binary data compression!"
-    msg << "Run with '--no-compress' to override this behavior"
-    msg << "or '-z' to zlib compress your binary data."
-    msg << "************************************************************"
-    raise ArgumentError, msg.join("\n")
+# use mzXML unless another filetype is specified
+filetype_flags = %w(mzML mgf text ms2 cms2).map {|v| "--" << v }
+unless has_args?(flags, *filetype_flags)
+  unless flags.include?("--mzXML")
+    flags << "--mzXML"
   end
 end
 
-(arguments, options, flags) = Katamari::Msconvert::MountedServer.classify_arguments(ARGV.dup.to_a, MSCONVERT_ARGS_W_VALS)
-
-option_string = (options.flatten + flags).join(" ")
-
-arguments.each do |file|
-  (output_file, msg) = client.convert_on_client(file, option_string, BASE_DIR, MOUNT_TMP_DIR)
-  puts "*************** <begin msconvert output> ******************"
-  puts msg
-  puts "**************** <end msconvert output> *******************"
-  puts "created: #{output_file}"
+# add on -z unless --no-compress is specified
+unless has_args?(flags, "-z", "--zlib", "--no-compress")
+  flags << "-z"
 end
+
+has_outdir = has_args?(options.flatten, "-o", "--outdir")
+using_filelist = has_args?(options.flatten, "-f", "--filelist")
+
+msconvert_command = 
+  if !flags.delete("--show-wine-msg") && MSCONVERT_BASE_CMD[/^wine/]
+    "export WINEDEBUG=fixme-all,err-all,warn-all,trace-all && " << MSCONVERT_BASE_CMD
+  else
+    MSCONVERT_BASE_CMD
+  end
+
+if flags.delete("--msconvert-usage")
+  reply = `#{msconvert_command}`
+  puts reply 
+  exit
+end
+
+$MULTITHREAD = false if flags.delete("--no-multithread")
+
+if $MULTITHREAD
+  puts "using a #{CORES_TO_USE} count thread-pool"
+  pool = Babypool.new(:thread_count => CORES_TO_USE)
+end
+
+cmd_reply = {}
+files.each do |file|
+  final_opts = 
+    if has_outdir || using_filelist
+      options
+    else
+      options + ['-o', File.dirname(file)]
+    end
+  cmd = [msconvert_command, file, *(final_opts + flags)].join(" ")
+  if $MULTITHREAD
+    puts "pushing #{file} onto the multithread queue"
+    pool.work(cmd) do |_cmd|
+      reply = `#{_cmd}`
+      cmd_reply[_cmd] = reply
+    end
+  else
+    puts "working on: #{file}"
+    reply = `#{cmd}` 
+    cmd_reply[cmd] = reply
+  end
+end
+
+pool.drain if $MULTITHREAD
+
+cmd_reply.each do |cmd,reply|
+  puts "executed: #{cmd}"
+  puts reply
+end
+
