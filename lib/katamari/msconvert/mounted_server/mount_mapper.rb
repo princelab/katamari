@@ -1,6 +1,6 @@
 
-class Katamari
-  class Msconvert
+module Katamari
+  module Msconvert
     module MountedServer
 
       class MountMapper

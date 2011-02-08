@@ -8,11 +8,14 @@ require 'katamari/msconvert/mounted_server'
 
 ### Will probably need to change for your system:
 # the mounted directory everything is relative to
-BASE_DIR = 'S:'
+#BASE_DIR = 'S:'
+BASE_DIR = '/home/jtprince/lab'
 
 ### Probaby don't need to change:
 # change if you need to specify a full path or different name
+#MSCONVERT_CMD = Katamari::Msconvert::MountedServer::MSCONVERT_CMD_WIN
 MSCONVERT_CMD = Katamari::Msconvert::MountedServer::MSCONVERT_CMD_WIN
+
 # you can change this if you like, just make sure the client knows
 PORT = Katamari::Msconvert::MountedServer::DEFAULT_PORT
 ################################################################################

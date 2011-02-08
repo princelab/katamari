@@ -6,7 +6,7 @@ require 'katamari/msconvert/mounted_server/mount_mapper'
 require 'katamari/msconvert/mounted_server/server'
 require 'katamari/msconvert/mounted_server/client'
 
-class Katamari
+module Katamari
   # provides a simple TCP server/client architecture for converting files
   # depends on a computer running msconvert_server.rb (found in bin dir)
   module Msconvert
@@ -18,6 +18,7 @@ class Katamari
     module MountedServer
       DEFAULT_PORT = 22907  # arbitrary
       MSCONVERT_CMD_WIN = "msconvert.exe"
+      MSCONVERT_CMD_WINE = "wine msconvert.exe"
       # temporary directory under the server mount directory
       DEFAULT_MOUNT_TMP_SUBDIR = "tmp"
       CUE_FOR_HELP = "--help"

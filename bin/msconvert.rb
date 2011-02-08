@@ -2,15 +2,22 @@
 
 require 'babypool'
 require 'katamari/util'
+require 'sane/os'
 
 ######################################################################
 # see: https://github.com/princelab/katamari/wiki/msconvert-on-linux
 # CONSTANTS:
+MSCONVERT_BASE_CMD = 
+  if OS.windows?
+    "msconvert.exe"
+  else
+    # I just put the unzipped pwiz binary directory in this location
+    # change to suit your tastes:
+    "wine /usr/local/pwiz-win/msconvert.exe"
+  end
 
-MSCONVERT_BASE_CMD = "wine /usr/local/pwiz-win/msconvert.exe"
-SHOW_WINE_MSGS = false
+
 # could set to 2 or 4 also
-$MULTITHREAD = true
 CORES_TO_USE = Katamari::Util.number_of_processors
 ######################################################################
 
@@ -23,6 +30,7 @@ if ARGV.size == 0
   puts "outputs: /path/to/<file>.mzXML ..."
   puts "  applicable arguments are passed through"
   puts "  avoid -e/--ext unless necessary to specify file extension (rather than type)"
+  puts "  if using wine, automatically turns off multithreading"
   puts ""
   puts "flags passed in by default (you don't need to set them):"
   puts "  --zlib             use --no-compress to remove"

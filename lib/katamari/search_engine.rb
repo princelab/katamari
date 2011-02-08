@@ -1,6 +1,6 @@
 
 
-class Katamari
+module Katamari
   module SearchEngine
     def search_input_filetype
       :mgf

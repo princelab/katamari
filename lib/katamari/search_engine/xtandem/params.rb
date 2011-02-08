@@ -1,6 +1,6 @@
 require 'nokogiri'
 
-class Katamari
+module Katamari
   module SearchEngine
     class Xtandem
 

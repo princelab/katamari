@@ -1,5 +1,5 @@
 
-class Katamari
+module Katamari
   module Msconvert
     module_function
 

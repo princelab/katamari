@@ -1,10 +1,10 @@
 require 'katamari/search_engine/xtandem/params'
 
-class Katamari
+
+module Katamari
   module SearchEngine
     class Xtandem
       class Params
-
         # holds configuration settings for an X!Tandem taxonomy xml file
         # 
         #     tax_params = Taxonomy.new
@@ -17,6 +17,7 @@ class Katamari
         #     # reads taxonomy xml files
         #     params = Taxonomy.new("taxonomy.xml")
         #     params.config  # => params hash
+
         class Taxonomy
           BIOML_LABEL = 'x! taxon-to-file matching list'
 
@@ -28,7 +29,7 @@ class Katamari
               else ; Hash.new {|h,k| h[k] = [] }
               end
           end
-          
+
           # returns a hash
           #
           #     hash['yeast'] = ['path/to/fastafile.fasta',...]
@@ -81,4 +82,3 @@ class Katamari
     end
   end
 end
-

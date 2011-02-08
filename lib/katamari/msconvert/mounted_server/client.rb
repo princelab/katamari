@@ -1,7 +1,7 @@
 require 'katamari/msconvert/mounted_server'
 
-class Katamari
-  class Msconvert
+module Katamari
+  module Msconvert
     module MountedServer
       class Client
         include MountedServer

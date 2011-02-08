@@ -1,7 +1,7 @@
 require 'nokogiri'
 require 'builder'
 
-class Katamari
+module Katamari
   module SearchEngine
     class Xtandem
 

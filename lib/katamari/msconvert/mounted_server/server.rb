@@ -1,14 +1,15 @@
+require 'katamari/msconvert'
 require 'katamari/msconvert/mounted_server'
 
-class Katamari
-  class Msconvert
+module Katamari
+  module Msconvert
     module MountedServer
       class Server
         include MountedServer
 
         def initialize(msconvert_cmd, port=MountedServer::DEFAULT_PORT, base_dir="/")
           @msconvert_cmd = msconvert_cmd
-          check_no_spaces(base_dir)
+          Katamari::Msconvert.check_no_spaces(base_dir)
           @mapper = MountMapper.new(base_dir)
           @port = port
         end

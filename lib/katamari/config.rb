@@ -1,7 +1,7 @@
 
 require 'yaml'
 
-class Katamari
+module Katamari
   class Config < Hash
     def initialize(filename=nil)
       self.default_proc = lambda {|h,k| h[k] = {} }

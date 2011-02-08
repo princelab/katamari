@@ -1,6 +1,6 @@
 require 'pathname'
 
-class Katamari
+module Katamari
   class Convert
     FILETYPES = [:mgf, :mzml, :raw]
 
